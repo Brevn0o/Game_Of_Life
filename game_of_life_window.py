@@ -107,8 +107,8 @@ class LifeGameWindow:
                     square.draw(self.canvas)
 
     def translate_coord_to_cell_coord(self, x, y):
-        section_x = x // self.cell_width * self.cell_width + self.cell_width // 2
-        section_y = y // self.cell_width * self.cell_width + self.cell_width // 2
+        section_x = x / self.cell_width * self.cell_width + self.cell_width / 2
+        section_y = y / self.cell_width * self.cell_width + self.cell_width / 2
         return section_x, section_y
 
     def get_coordinates_by_cell(self, cell_row, cell_column):

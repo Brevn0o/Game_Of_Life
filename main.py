@@ -7,7 +7,7 @@ class LifeGame:
     def __init__(self):
         self.number_of_x_cells = 20
         self.number_of_y_cells = 20
-        self.cell_width = 20
+        self.cell_width = 10
 
     def run(self):
         win = LifeGameWindow(self.number_of_x_cells,
