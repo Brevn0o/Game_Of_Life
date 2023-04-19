@@ -1,6 +1,9 @@
+import json
+import os
 import random
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
+from tkinter import messagebox
 from dataclasses import dataclass
 import numpy as np
 
@@ -26,36 +29,47 @@ class LifeGameWindow:
         self.pause = True
 
         self.root = tk.Tk()
-        self.root.geometry(f'{self.width}x{self.height + 32}')
         self.root.resizable(False, False)
 
         self.canvas = tk.Canvas(self.root, width=self.width, height=self.height - 2, bg='white')
         self.canvas.grid()
 
-        self.buttons_frame = tk.Frame(self.root)
+        self.control_buttons_frame = tk.Frame(self.root)
 
-        self.step_button = ttk.Button(self.buttons_frame, text='Step', width=self.width // 50, command=self.on_step)
-        self.step_button.grid(column=0, row=0)
+        self.step_button = ttk.Button(self.control_buttons_frame, text='Step', width=self.width // 50,
+                                      command=self.on_step)
+        self.step_button.grid(column=2, row=0)
 
-        self.start_pause_button = ttk.Button(self.buttons_frame, text='Start', width=self.width // 15, command=self.on_start_pause)
-        self.start_pause_button.grid(column=1, row=0)
+        self.start_pause_button = ttk.Button(self.control_buttons_frame, text='Start', width=self.width // 30,
+                                             command=self.on_start_pause)
+        self.start_pause_button.grid(column=3, row=0)
 
-        self.clear_button = ttk.Button(self.buttons_frame, text='Clear', width=self.width // 50, command=self.on_clear)
-        self.clear_button.grid(column=2, row=0)
+        self.clear_button = ttk.Button(self.control_buttons_frame, text='Clear', width=self.width // 50,
+                                       command=self.on_clear)
+        self.clear_button.grid(column=4, row=0)
 
         self.mode = tk.StringVar()
-        self.paint_mode_combo_box = ttk.Combobox(self.buttons_frame, values=['Create', 'Kill'], width=self.width // 60,
+        self.paint_mode_combo_box = ttk.Combobox(self.control_buttons_frame, values=['Add', 'Kill'],
+                                                 width=self.width // 60,
                                                  state='readonly', textvariable=self.mode)
-        self.paint_mode_combo_box.set('Create')
-        self.paint_mode_combo_box.grid(column=3, row=0)
+        self.paint_mode_combo_box.set('Add')
+        self.paint_mode_combo_box.grid(column=5, row=0)
 
-        self.buttons_frame.grid()
+        self.control_buttons_frame.grid()
 
-        self.canvas.cell_width = self.cell_width
-        self.canvas.number_of_x_cells = self.number_of_x_cells
-        self.canvas.number_of_y_cells = self.number_of_y_cells
-        self.canvas.width = self.width
-        self.canvas.height = self.height
+        self.other_buttons_frame = tk.Frame(self.root)
+
+        self.save_button = ttk.Button(self.other_buttons_frame, text='Save', width=self.width // 60,
+                                      command=self.on_save)
+        self.save_button.grid(column=0, row=0)
+
+        self.load_button = ttk.Button(self.other_buttons_frame, text='Load', width=self.width // 60,
+                                      command=self.on_load)
+        self.load_button.grid(column=1, row=0)
+
+        self.other_buttons_frame.grid()
+
+        self.build_canvas(self.number_of_x_cells, self.number_of_y_cells, self.cell_width)
         self.canvas.bind('<Button-1>', self.on_click)
         self.canvas.bind('<B1-Motion>', self.on_click)
         self.draw_canvas()
@@ -76,11 +90,36 @@ class LifeGameWindow:
         self.cells = self.get_next_generation(self.cells)
         self.draw_canvas()
 
+    def on_save(self):
+        file_path = filedialog.asksaveasfilename(defaultextension='.json', initialdir='.')
+        try:
+            with open(file_path, 'w') as f:
+                json.dump({'config': {'number_of_x_cells': self.number_of_x_cells,
+                                      'number_of_y_cells': self.number_of_y_cells,
+                                      'cell_width': self.cell_width},
+                           'cells': self.cells}, f)
+        except FileNotFoundError:
+            self.show_error('File not found')
+
+    def on_load(self):
+        file_path = filedialog.askopenfilename(filetypes=[('JSON files', '*.json')])
+        try:
+            with open(file_path, 'r') as f:
+                json_str = f.read()
+                json_data = json.loads(json_str)
+            self.build_canvas(json_data['config']['number_of_x_cells'],
+                              json_data['config']['number_of_y_cells'],
+                              json_data['config']['cell_width'])
+            self.cells = json_data['cells']
+            self.draw_canvas()
+        except FileNotFoundError:
+            self.show_error('File not found')
+
     def on_click(self, event):
         if 0 < event.x < self.width and 0 < event.y < self.height:
             x, y = self.translate_coord_to_cell_coord(event.x, event.y)
             cell_row, cell_column = self.get_cell_by_coordinates(x, y)
-            self.cells[cell_row][cell_column] = True if self.mode.get() == 'Create' else False
+            self.cells[cell_row][cell_column] = True if self.mode.get() == 'Add' else False
             square = Square(x, y, self.cell_width)
             square.set_fill('black')
             square.draw(self.canvas)
@@ -124,6 +163,24 @@ class LifeGameWindow:
     def kill_cells(self):
         self.cells = [[False for _ in range(self.number_of_y_cells)] for _ in range(self.number_of_x_cells)]
 
+    def build_canvas(self, number_of_x_cells, number_of_y_cells, cell_width):
+        self.number_of_x_cells = number_of_x_cells
+        self.number_of_y_cells = number_of_y_cells
+        self.cell_width = cell_width
+        self.width = self.number_of_x_cells * self.cell_width
+        self.height = self.number_of_y_cells * self.cell_width
+        self.canvas.config(width=self.width, height=self.height - 2)
+        self.root.config(width=self.width, height=self.height + 57)
+        self.canvas.cell_width = self.cell_width
+        self.canvas.number_of_x_cells = self.number_of_x_cells
+        self.canvas.number_of_y_cells = self.number_of_y_cells
+        self.canvas.width = self.width
+        self.canvas.height = self.height
+
+    @staticmethod
+    def show_error(text):
+        messagebox.showerror(message=text)
+
     @staticmethod
     def count_live_neighbors(grid, row, col):
         rows, cols = grid.shape
@@ -142,7 +199,6 @@ class LifeGameWindow:
                 elif not grid[i, j] and live_neighbors == 3:
                     new_grid[i, j] = 1
         return new_grid.tolist()
-
 
     def run(self):
         self.root.mainloop()
