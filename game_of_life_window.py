@@ -24,6 +24,8 @@ class LifeGameWindow:
         self.height = self.number_of_y_cells * self.cell_width
 
         self.cells = []
+        self.live_cells = 0
+        self.generation = 0
         self.kill_cells()
         self.session_key = ''
         self.pause = True
@@ -87,8 +89,7 @@ class LifeGameWindow:
         self.draw_canvas()
 
     def on_step(self):
-        self.cells = self.get_next_generation(self.cells)
-        self.draw_canvas()
+        self.make_step()
 
     def on_save(self):
         file_path = filedialog.asksaveasfilename(defaultextension='.json', initialdir='.')
@@ -99,7 +100,7 @@ class LifeGameWindow:
                                       'cell_width': self.cell_width},
                            'cells': self.cells}, f)
         except FileNotFoundError:
-            self.show_error('File not found')
+            pass
 
     def on_load(self):
         file_path = filedialog.askopenfilename(filetypes=[('JSON files', '*.json')])
@@ -113,7 +114,7 @@ class LifeGameWindow:
             self.cells = json_data['cells']
             self.draw_canvas()
         except FileNotFoundError:
-            self.show_error('File not found')
+            pass
 
     def on_click(self, event):
         if 0 < event.x < self.width and 0 < event.y < self.height:
@@ -127,8 +128,7 @@ class LifeGameWindow:
 
     def living_thread(self):
         if not self.pause:
-            self.cells = self.get_next_generation(self.cells)
-            self.draw_canvas()
+            self.make_step()
         if True:
             self.root.after(self.step_delay, self.living_thread)
 
@@ -144,6 +144,11 @@ class LifeGameWindow:
                     square = Square(x, y, self.cell_width)
                     square.set_fill('black')
                     square.draw(self.canvas)
+        self.count_live_cells()
+        self.canvas.create_text(5, 15,
+                                text=f'Gen: {self.generation}\n'
+                                     f'Cells: {self.live_cells}',
+                                fill='green', anchor='w', font=('TkDefaultFont', 8))
 
     def translate_coord_to_cell_coord(self, x, y):
         section_x = x / self.cell_width * self.cell_width + self.cell_width / 2
@@ -177,9 +182,21 @@ class LifeGameWindow:
         self.canvas.width = self.width
         self.canvas.height = self.height
 
+    def make_step(self):
+        self.generation += 1
+        self.cells = self.get_next_generation(self.cells)
+        self.draw_canvas()
+
     @staticmethod
     def show_error(text):
         messagebox.showerror(message=text)
+
+    def count_live_cells(self):
+        self.live_cells = 0
+        for row in self.cells:
+            for cell in row:
+                if cell:
+                    self.live_cells += 1
 
     @staticmethod
     def count_live_neighbors(grid, row, col):
