@@ -20,8 +20,10 @@ class LifeGameWindow:
         self.width = self.number_of_x_cells * self.cell_width
         self.height = self.number_of_y_cells * self.cell_width
 
-        self.cells = [[False for _ in range(self.number_of_y_cells)] for _ in range(self.number_of_x_cells)]
+        self.cells = []
+        self.kill_cells()
         self.session_key = ''
+        self.pause = True
 
         self.root = tk.Tk()
         self.root.geometry(f'{self.width}x{self.height + 32}')
@@ -32,8 +34,20 @@ class LifeGameWindow:
 
         self.buttons_frame = tk.Frame(self.root)
 
-        self.start_button = ttk.Button(self.buttons_frame, text='Start', width=self.width // 10, command=self.on_start)
-        self.start_button.grid()
+        self.step_button = ttk.Button(self.buttons_frame, text='Step', width=self.width // 50, command=self.on_step)
+        self.step_button.grid(column=0, row=0)
+
+        self.start_pause_button = ttk.Button(self.buttons_frame, text='Start', width=self.width // 15, command=self.on_start_pause)
+        self.start_pause_button.grid(column=1, row=0)
+
+        self.clear_button = ttk.Button(self.buttons_frame, text='Clear', width=self.width // 50, command=self.on_clear)
+        self.clear_button.grid(column=2, row=0)
+
+        self.mode = tk.StringVar()
+        self.paint_mode_combo_box = ttk.Combobox(self.buttons_frame, values=['Create', 'Kill'], width=self.width // 60,
+                                                 state='readonly', textvariable=self.mode)
+        self.paint_mode_combo_box.set('Create')
+        self.paint_mode_combo_box.grid(column=3, row=0)
 
         self.buttons_frame.grid()
 
@@ -45,34 +59,45 @@ class LifeGameWindow:
         self.canvas.bind('<Button-1>', self.on_click)
         self.canvas.bind('<B1-Motion>', self.on_click)
         self.draw_canvas()
+        self.root.after(self.step_delay, self.living_thread)
 
-    def on_start(self):
-        self.session_key = LifeGameWindow.generate_key()
-        self.root.after(self.step_delay, self.living_thread, self.session_key)
+    def on_start_pause(self):
+        self.pause = False if self.pause else True
+        if not self.pause:
+            self.start_pause_button.config(text='Pause')
+        else:
+            self.start_pause_button.config(text='Start')
+
+    def on_clear(self):
+        self.kill_cells()
+        self.draw_canvas()
+
+    def on_step(self):
+        self.cells = self.get_next_generation(self.cells)
+        self.draw_canvas()
 
     def on_click(self, event):
         if 0 < event.x < self.width and 0 < event.y < self.height:
             x, y = self.translate_coord_to_cell_coord(event.x, event.y)
             cell_row, cell_column = self.get_cell_by_coordinates(x, y)
-            self.cells[cell_row][cell_column] = True
+            self.cells[cell_row][cell_column] = True if self.mode.get() == 'Create' else False
             square = Square(x, y, self.cell_width)
             square.set_fill('black')
             square.draw(self.canvas)
-
-    def living_thread(self, session_key):
-        if session_key != self.session_key:
-            return
-        self.cells = self.get_next_generation(self.cells)
         self.draw_canvas()
+
+    def living_thread(self):
+        if not self.pause:
+            self.cells = self.get_next_generation(self.cells)
+            self.draw_canvas()
         if True:
-            self.root.after(self.step_delay, self.living_thread, session_key)
+            self.root.after(self.step_delay, self.living_thread)
 
     def draw_canvas(self):
         self.canvas.delete('all')
         if self.grid:
             grid = Grid()
             grid.draw(self.canvas)
-        print(self.cells)
         for i in range(len(self.cells)):
             for j in range(len(self.cells[i])):
                 if self.cells[i][j]:
@@ -96,12 +121,17 @@ class LifeGameWindow:
         cell_column = int((y - self.cell_width / 2) / self.cell_width)
         return cell_row, cell_column
 
-    def count_live_neighbors(self, grid, row, col):
+    def kill_cells(self):
+        self.cells = [[False for _ in range(self.number_of_y_cells)] for _ in range(self.number_of_x_cells)]
+
+    @staticmethod
+    def count_live_neighbors(grid, row, col):
         rows, cols = grid.shape
         slices = (slice(max(row - 1, 0), min(row + 2, rows)), slice(max(col - 1, 0), min(col + 2, cols)))
         return np.sum(grid[slices]) - grid[row, col]
 
-    def get_next_generation(self, grid):
+    @staticmethod
+    def get_next_generation(grid):
         grid = np.array(grid)
         new_grid = np.zeros_like(grid)
         for i in range(grid.shape[0]):
@@ -113,9 +143,6 @@ class LifeGameWindow:
                     new_grid[i, j] = 1
         return new_grid.tolist()
 
-    @staticmethod
-    def generate_key():
-        return ''.join([random.choice('qwertyuiopasdfghjklzxcvbnm1234567890') for _ in range(7)])
 
     def run(self):
         self.root.mainloop()

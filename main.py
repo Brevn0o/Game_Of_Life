@@ -1,13 +1,13 @@
 import tkinter
-from life_game_window import *
+from game_of_life_window import *
 
 
 class LifeGame:
 
     def __init__(self):
-        self.number_of_x_cells = 40
-        self.number_of_y_cells = 40
-        self.cell_width = 10
+        self.number_of_x_cells = 20
+        self.number_of_y_cells = 20
+        self.cell_width = 20
 
     def run(self):
         win = LifeGameWindow(self.number_of_x_cells,
