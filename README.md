@@ -6,6 +6,7 @@
 - Set grid size in main.py
 - Add or kill cells
 - Clear all cells
+- Import your image
 - Save and Load your cell to json file
 
 ## How to use
