@@ -6,6 +6,7 @@ from tkinter import ttk, filedialog
 from tkinter import messagebox
 from dataclasses import dataclass
 import numpy as np
+from PIL import Image
 
 from figures.square import Square
 from figures.grid import Grid
@@ -67,7 +68,11 @@ class LifeGameWindow:
 
         self.load_button = ttk.Button(self.other_buttons_frame, text='Load', width=self.width // 60,
                                       command=self.on_load)
-        self.load_button.grid(column=1, row=0)
+        self.load_button.grid(column=1, row=0, padx=(0, self.width // 27))
+
+        self.load_image_button = ttk.Button(self.other_buttons_frame, text='Load Image', width=self.width // 45,
+                                      command=self.on_load_image)
+        self.load_image_button.grid(column=2, row=0)
 
         self.other_buttons_frame.grid()
 
@@ -86,6 +91,7 @@ class LifeGameWindow:
 
     def on_clear(self):
         self.kill_cells()
+        self.generation = 0
         self.draw_canvas()
 
     def on_step(self):
@@ -103,7 +109,7 @@ class LifeGameWindow:
             pass
 
     def on_load(self):
-        file_path = filedialog.askopenfilename(filetypes=[('JSON files', '*.json')])
+        file_path = filedialog.askopenfilename(filetypes=[('JSON files', '*.json')], initialdir='.')
         try:
             with open(file_path, 'r') as f:
                 json_str = f.read()
@@ -113,6 +119,29 @@ class LifeGameWindow:
                               json_data['config']['cell_width'])
             self.cells = json_data['cells']
             self.draw_canvas()
+            self.generation = 0
+        except FileNotFoundError:
+            pass
+
+    def on_load_image(self):
+        file_path = filedialog.askopenfilename(filetypes=[('Image Files', ('*.jpg', '*.png'))], initialdir='.')
+        if not os.path.exists(file_path):
+            return
+        try:
+            img = Image.open(file_path)
+            img = img.resize(self.transform_image_size(img.size[0], img.size[1], 150))
+            img_width, img_height = img.size
+            img = img.convert("1")
+            self.cells = []
+            for y in range(img_width):
+                row = []
+                for x in range(img_height):
+                    pixel = img.getpixel((y, x))
+                    row.append(False if pixel == 255 else True)
+                self.cells.append(row)
+            self.build_canvas(img_width, img_height, 4)
+            self.draw_canvas()
+            self.generation = 0
         except FileNotFoundError:
             pass
 
@@ -136,7 +165,7 @@ class LifeGameWindow:
         self.canvas.delete('all')
         if self.grid:
             grid = Grid()
-            grid.draw(self.canvas)
+            grid.draw(self.canvas, 'lightgrey')
         for i in range(len(self.cells)):
             for j in range(len(self.cells[i])):
                 if self.cells[i][j]:
@@ -216,6 +245,16 @@ class LifeGameWindow:
                 elif not grid[i, j] and live_neighbors == 3:
                     new_grid[i, j] = 1
         return new_grid.tolist()
+
+    @staticmethod
+    def transform_image_size(width, height, new_size):
+        if width > height:
+            new_width = new_size
+            new_height = int(height * (new_size / width))
+        else:
+            new_height = new_size
+            new_width = int(width * (new_size / height))
+        return new_width, new_height
 
     def run(self):
         self.root.mainloop()
