@@ -6,3 +6,9 @@ class Figure:
 
     def set_fill(self, fill):
         self.options['fill'] = fill
+
+    def set_outline(self, outline):
+        self.options['outline'] = outline
+
+    def set_width(self, width):
+        self.options['width'] = width
