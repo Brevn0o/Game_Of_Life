@@ -1,4 +1,4 @@
-# Game_Of_Life
+# Game Of Life
 ###### Simple Game of Life using python and tkinter
 
 ## Functionality
