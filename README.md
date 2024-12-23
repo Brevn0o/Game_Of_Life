@@ -14,5 +14,5 @@
 1. Run main.py
 
 ## How it looks:
-![Game-Of-Life](https://cdn.discordapp.com/attachments/933356358097580103/1099097287155785739/image.png "Window")
+![Game-Of-Life](https://i.ibb.co/1XHs7KT/Screenshot-2023-04-21-182007.png "Window")
 
