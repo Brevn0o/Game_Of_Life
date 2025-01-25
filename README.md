@@ -13,6 +13,6 @@
 
 1. Run main.py
 
-## How it looks:
+## How it looks like:
 ![Game-Of-Life](https://github.com/user-attachments/assets/14440949-dec3-4c55-b512-bc57fb87ce14 "Window")
 
