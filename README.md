@@ -14,5 +14,5 @@
 1. Run main.py
 
 ## How it looks:
-![Game-Of-Life](https://i.ibb.co/1XHs7KT/Screenshot-2023-04-21-182007.png "Window")
+![Game-Of-Life](https://github.com/user-attachments/assets/14440949-dec3-4c55-b512-bc57fb87ce14 "Window")
 
